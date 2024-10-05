@@ -1,0 +1,17 @@
+[Unit]
+Description=dill
+After=network.target
+
+[Service]
+Type=forking
+User=root
+WorkingDirectory=/root/dill
+ExecStart=/root/dill/start_dill_node.sh
+Restart=always  # Tự động khởi động lại dịch vụ khi nó gặp lỗi hoặc dừng.
+RestartSec=5   # Thời gian chờ 10 giây trước khi khởi động lại.
+CPUQuota=60%    # Giới hạn sử dụng CPU ở mức 50%.
+MemoryLimit=800M  # Giới hạn bộ nhớ ở mức 900MB để tránh tiêu tốn quá nhiều RAM.
+LimitNOFILE=4096  # Giới hạn số file mở để tăng khả năng xử lý kết nối.
+
+[Install]
+WantedBy=multi-user.target
