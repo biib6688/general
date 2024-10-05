@@ -11,7 +11,7 @@ Restart=always  # Tự động khởi động lại dịch vụ khi nó gặp l�
 RestartSec=5   # Thời gian chờ 5 giây trước khi khởi động lại.
 CPUQuota=60%    # Giới hạn sử dụng CPU ở mức 60%.
 MemoryMax=600M  # Giới hạn bộ nhớ RAM ở mức 600MB.
-MemorySwapMax=800M  # Giới hạn swap ở mức 500MB để ngăn việc sử dụng quá nhiều swap.
+MemorySwapMax=1200M  # Giới hạn swap ở mức 500MB để ngăn việc sử dụng quá nhiều swap.
 LimitNOFILE=4096  # Giới hạn số file mở để tăng khả năng xử lý kết nối.
 MemoryAccounting=true  # Kích hoạt theo dõi bộ nhớ để áp dụng các giới hạn bộ nhớ.
 
