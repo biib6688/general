@@ -3,7 +3,7 @@
 # Check swap used > 2GB
 USED_SWAP=$(free | grep Swap | awk '{print $3}')
 if [ "$USED_SWAP" -gt 2097152 ]; then
-  echo "Swap usage is greater than 2.5GB. Proceeding with service restart..."
+  echo "Swap usage is greater than 2GB. Proceeding with service restart..."
   
   # Stop dill and hemi
   systemctl stop dill
