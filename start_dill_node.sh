@@ -171,7 +171,7 @@ if [ $has_light -eq 1 ];then
     # start light node
     COMMON_FLAGS="--light --datadir $DATA_ROOT/beacondata \
     --genesis-state $ROOT/genesis.ssz --grpc-gateway-host 0.0.0.0 --initial-validators $ROOT/validators.json \
-    --block-batch-limit 256 --min-sync-peers 1 --minimum-peers-per-subnet 1 \
+    --block-batch-limit 64 --min-sync-peers 1 --minimum-peers-per-subnet 1 \
     --alps --enable-debug-rpc-endpoints \
     --suggested-fee-recipient 0x1a5E568E5b26A95526f469E8d9AC6d1C30432B33 \
     --log-format json --verbosity fatal --log-file $LOG_ROOT/dill.log \
