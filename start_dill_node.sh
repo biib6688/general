@@ -1,6 +1,7 @@
 #! /bin/bash
 
 _ROOT="$(pwd)" && cd "$(dirname "$0")" && ROOT="$(pwd)"
+ROOT=$(cd "$(dirname "$0")";pwd)
 PJROOT="$ROOT"
 
 tlog() {
@@ -17,6 +18,10 @@ print_usage(){
     exit
 }
 
+#if [ $# -lt 1 ];then
+#    print_usage
+#fi
+
 TEMP=$(getopt -o 'k:n:p:' --long 'keydir:,natIP:,pwdfile:' -n 'example.bash' -- "$@")
 if [ $? -ne 0 ]; then
         echo 'Terminating...' >&2
@@ -29,6 +34,8 @@ unset TEMP
 
 NODE_BIN="dill-node"
 NAT_IP=""
+PEER_ENR=""
+PEER_ID=""
 KEY_DIR="$PJROOT/keystore"
 KEY_PWD_FILE=""
 
@@ -56,6 +63,11 @@ while true; do
         esac
 done
 
+echo 'Remaining arguments:'
+for arg; do
+        echo "--> '$arg'"
+done
+
 if [ -z "$KEY_PWD_FILE" ];then
     KEY_PWD_FILE="$PJROOT/validator_keys/keystore_password.txt"    
     if [ ! -f "$KEY_PWD_FILE" ]; then
@@ -68,16 +80,34 @@ if [ -z "$KEY_PWD_FILE" ];then
 fi
 
 LIGHT_PROC_ROOT=$PJROOT/light_node
-if [ ! -d $LIGHT_PROC_ROOT ]; then
-    echo "Error: light_node directory does not exist. Please create it before running this script."
+FULL_PROC_ROOT=$PJROOT/full_node
+has_light=0
+has_full=0
+if [ -d $LIGHT_PROC_ROOT ];then
+    has_light=1
+fi
+if [ -d $FULL_PROC_ROOT ];then
+    has_full=1
+fi
+if [ $has_light -eq 1 ] && [ $has_full -eq 1 ]; then
+    echo "Error: Both light_node and full_node directories exist. Please ensure only one of them is present."
+    exit 1
+fi
+if [ $has_light -eq 0 ] && [ $has_full -eq 0 ]; then
+    echo "Error: Neither light_node nor full_node directory exists. Please ensure one of them is present."
     exit 1
 fi
 
-PROC_ROOT=$LIGHT_PROC_ROOT
+if [ $has_light -eq 1 ];then
+    PROC_ROOT=$PJROOT/light_node
+else
+    PROC_ROOT=$PJROOT/full_node
+fi
 DATA_ROOT=$PROC_ROOT/data
 LOG_ROOT=$PROC_ROOT/logs
 
 default_port_file="default_ports.txt"
+
 PORT_FLAGS=""
 port_occupied=""
 declare -A ports_used
@@ -119,6 +149,7 @@ done < $default_port_file
 
 echo "using password file at $KEY_PWD_FILE"
 
+
 ensure_path(){
     path=$1
     if [ ! -d $path ]; then
@@ -136,17 +167,34 @@ if [ ! -z "$KEY_DIR" ]; then
     VALIDATOR_FLAGS="$VALIDATOR_FLAGS --wallet-dir $KEY_DIR "
 fi
 
-# start light node
-COMMON_FLAGS="--light --datadir $DATA_ROOT/beacondata \
---genesis-state $ROOT/genesis.ssz --grpc-gateway-host 0.0.0.0 --initial-validators $ROOT/validators.json \
---block-batch-limit 256 --min-sync-peers 10 --minimum-peers-per-subnet 10 \
---alps --enable-debug-rpc-endpoints \
---suggested-fee-recipient 0x1a5E568E5b26A95526f469E8d9AC6d1C30432B33 \
---log-format json --verbosity error --log-file $LOG_ROOT/dill.log \
---exec-http --exec-http.api eth,net,web3 --exec-gcmode archive --exec-syncmode full --exec-mine=false --accept-terms-of-use "
-
-echo "start light node"
-
-$PJROOT/$NODE_BIN $COMMON_FLAGS $DISCOVERY_FLAGS $VALIDATOR_FLAGS $PORT_FLAGS > /dev/null &
-
-echo "start light node done"
+if [ $has_light -eq 1 ];then
+    # start light node
+    COMMON_FLAGS="--light --datadir $DATA_ROOT/beacondata \
+    --genesis-state $ROOT/genesis.ssz --grpc-gateway-host 0.0.0.0 --initial-validators $ROOT/validators.json \
+    --block-batch-limit 256 --min-sync-peers 1 --minimum-peers-per-subnet 1 \
+    --alps --enable-debug-rpc-endpoints \
+    --suggested-fee-recipient 0x1a5E568E5b26A95526f469E8d9AC6d1C30432B33 \
+    --log-format json --verbosity fatal --log-file $LOG_ROOT/dill.log \
+    --exec-http --exec-http.api eth,net,web3 --exec-gcmode archive --exec-syncmode full --exec-mine=false --accept-terms-of-use "
+    
+    echo "start light node"
+    
+    $PJROOT/$NODE_BIN $COMMON_FLAGS $DISCOVERY_FLAGS $VALIDATOR_FLAGS $PORT_FLAGS > /dev/null &
+    
+    echo "start light node done"
+else
+    # start full node
+    COMMON_FLAGS=" --datadir $DATA_ROOT/beacondata \
+    --genesis-state $ROOT/genesis.ssz --grpc-gateway-host 0.0.0.0 --initial-validators $ROOT/validators.json \
+    --block-batch-limit 128 --min-sync-peers 1 --minimum-peers-per-subnet 1 \
+    --alps --enable-debug-rpc-endpoints \
+    --suggested-fee-recipient 0x1a5E568E5b26A95526f469E8d9AC6d1C30432B33 \
+    --log-format json --verbosity error --log-file $LOG_ROOT/dill.log \
+    --exec-http --exec-http.api eth,net,web3 --exec-gcmode archive --exec-syncmode full --exec-mine=false --accept-terms-of-use "
+    
+    echo "start full node"
+    
+    $PJROOT/$NODE_BIN $COMMON_FLAGS $DISCOVERY_FLAGS $VALIDATOR_FLAGS $PORT_FLAGS > /dev/null &
+    
+    echo "start full node done"
+fi
